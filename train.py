@@ -12,9 +12,6 @@ from keras.layers import Input
 from keras.utils.np_utils import to_categorical  
 from keras.preprocessing.image import img_to_array  
 from keras.callbacks import ModelCheckpoint ,TensorBoard
-from SegNet0 import *
-from SegNet2 import *
-from SegNet1 import *
 from SegNet import *
 from FCN32 import *
 from UNET import *

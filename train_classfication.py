@@ -100,8 +100,14 @@ def train(key,EPOCHS = 10,BatchSize = 4,train_numb_per_epoch = 10*8,valid_rate =
     tb=TensorBoard(log_dir='D:\Python\seg-data/log/%s_log/' % key)
     callableTF = [modelcheck,tb]   
 
+
+
+
     print ("the number of train data is",train_numb,train_numb//BS)  
     print ("the number of val data is",valid_numb,valid_numb//BS)
+
+
+
 
     H = m.fit_generator(generator=generateDataTF(BS,img_w,img_h,2,['2016.tif','2017.tif','2019.tif'],['2016.png','2017.png','2019.png']),
                         steps_per_epoch=train_numb_per_epoch,

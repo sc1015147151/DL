@@ -1,2 +1,2 @@
-python train.py -k UNET  -e 100 -b 8  -s 256
+python train.py -k SegNet0  -e 200 -b 8  -s 256
 

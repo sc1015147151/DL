@@ -86,7 +86,7 @@ class MaxUnpooling2D(Layer):
             indices = K.transpose(K.reshape(
                 K.stack([b, y, x, f]),
                 [4, updates_size]))
-            print(K.tf.size(indices) ,'!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+            print(K.tf.size(indices) )
             values = K.reshape(updates, [updates_size])
             ret = K.tf.scatter_nd(indices, values, output_shape)
             return ret

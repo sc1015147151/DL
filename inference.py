@@ -85,7 +85,7 @@ def predict(key):
                 crop = padding_img[i*stride:i*stride+image_size,j*stride:j*stride+image_size,:]
                 ch,cw,_ = crop.shape
                 print(crop.shape)
-                if (ch != 256 or cw != 256):
+                 if (ch != 256 or cw != 256):
                     print ('invalid size!')
                     continue
                 crop = np.expand_dims(crop, axis=0)
@@ -106,12 +106,10 @@ def predict(key):
 
 
 def args_parse():
-# construct the argument parse and parse the arguments
+# construct the argument parse and parse the    arguments
     ap = argparse.ArgumentParser()
     ap.add_argument("-k", "--key", required=False,help="key of train model ")
-		
 
-		
     args = vars(ap.parse_args())    
     return args
 

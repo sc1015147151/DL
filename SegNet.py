@@ -15,6 +15,7 @@ from keras.callbacks import ModelCheckpoint ,TensorBoard
 from SegNet import *
 from FCN32 import *
 from Models.utils import *
+from Models.Area_interp import *
 from sklearn.preprocessing import LabelEncoder  
 from PIL import Image  
 import matplotlib.pyplot as plt  
@@ -321,8 +322,8 @@ def SegNet1(
     conv_22 = BatchNormalization()(conv_22)
     conv_22 = Activation("relu")(conv_22)
 
-    unpool_4 = MaxUnpooling2D(pool_size)([conv_22, mask_2])
-
+    #unpool_4 = Area_interp(pool_size)([conv_22, mask_2])
+    unpool_4 = Area_interp(pool_size)(conv_22)
     conv_23 = Convolution2D(128, (kernel, kernel), padding="same")(unpool_4)
     conv_23 = BatchNormalization()(conv_23)
     conv_23 = Activation("relu")(conv_23)
