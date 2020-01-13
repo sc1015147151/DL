@@ -12,9 +12,7 @@ from keras.utils.np_utils import to_categorical
 from keras.preprocessing.image import img_to_array  
 from keras.callbacks import ModelCheckpoint ,TensorBoard
 
-
-from Models.utils import *
-from Models.Area_interp import *
+from utils import *
 from sklearn.preprocessing import LabelEncoder  
 from PIL import Image  
 import matplotlib.pyplot as plt  
@@ -25,16 +23,20 @@ from tqdm import tqdm
 from keras import backend as K 
 from keras.applications import vgg16
 from keras.layers import Input
-def SegNet(
-        input_shape=(256,256,4),
+from warnings import simplefilter
+simplefilter(action='ignore', category=FutureWarning)
+def SegNet2In(
+        input_shape=[(256,256,4),(128,128,1)],
         n_labels=2,
         kernel=3,
         pool_size=(2, 2),
         output_mode="softmax"):
     # encoder
-    inputs = Input(shape=input_shape)
-    img_w=input_shape[1]
-    img_h=input_shape[2] 
+    
+    inputs= Input(shape=(256,256,4), name='Input10')  
+    inputs_2 = Input(shape=(128,128,1), name='Input20')  
+    img_w=input_shape[0][0]
+    img_h=input_shape[0][1] 
     conv_1 = Convolution2D(64, (kernel, kernel), padding="same")(inputs)
     conv_1 = BatchNormalization()(conv_1)
     conv_1 = Activation("relu")(conv_1)
@@ -42,8 +44,10 @@ def SegNet(
     conv_2 = BatchNormalization()(conv_2)
     conv_2 = Activation("relu")(conv_2)
 
-    pool_1, mask_1 = MaxPoolingWithArgmax2D(pool_size)(conv_2)
 
+
+    pool_1, mask_1 = MaxPoolingWithArgmax2D(pool_size)(conv_2)
+    #128*128*4
     conv_3 = Convolution2D(128, (kernel, kernel), padding="same")(pool_1)
     conv_3 = BatchNormalization()(conv_3)
     conv_3 = Activation("relu")(conv_3)
@@ -88,330 +92,7 @@ def SegNet(
     conv_13 = Activation("relu")(conv_13)
 
     pool_5, mask_5 = MaxPoolingWithArgmax2D(pool_size)(conv_13)
-    print("Build enceder done..")
-
-    # decoder
-
-    unpool_1 = MaxUnpooling2D(pool_size)([pool_5, mask_5])
-
-    conv_14 = Convolution2D(512, (kernel, kernel), padding="same")(unpool_1)
-    conv_14 = BatchNormalization()(conv_14)
-    conv_14 = Activation("relu")(conv_14)
-    conv_15 = Convolution2D(512, (kernel, kernel), padding="same")(conv_14)
-    conv_15 = BatchNormalization()(conv_15)
-    conv_15 = Activation("relu")(conv_15)
-    conv_16 = Convolution2D(512, (kernel, kernel), padding="same")(conv_15)
-    conv_16 = BatchNormalization()(conv_16)
-    conv_16 = Activation("relu")(conv_16)
-
-    unpool_2 = MaxUnpooling2D(pool_size)([conv_16, mask_4])
-
-    conv_17 = Convolution2D(512, (kernel, kernel), padding="same")(unpool_2)
-    conv_17 = BatchNormalization()(conv_17)
-    conv_17 = Activation("relu")(conv_17)
-    conv_18 = Convolution2D(512, (kernel, kernel), padding="same")(conv_17)
-    conv_18 = BatchNormalization()(conv_18)
-    conv_18 = Activation("relu")(conv_18)
-    conv_19 = Convolution2D(256, (kernel, kernel), padding="same")(conv_18)
-    conv_19 = BatchNormalization()(conv_19)
-    conv_19 = Activation("relu")(conv_19)
-
-    unpool_3 = MaxUnpooling2D(pool_size)([conv_19, mask_3])
-
-    conv_20 = Convolution2D(256, (kernel, kernel), padding="same")(unpool_3)
-    conv_20 = BatchNormalization()(conv_20)
-    conv_20 = Activation("relu")(conv_20)
-    conv_21 = Convolution2D(256, (kernel, kernel), padding="same")(conv_20)
-    conv_21 = BatchNormalization()(conv_21)
-    conv_21 = Activation("relu")(conv_21)
-    conv_22 = Convolution2D(128, (kernel, kernel), padding="same")(conv_21)
-    conv_22 = BatchNormalization()(conv_22)
-    conv_22 = Activation("relu")(conv_22)
-
-    unpool_4 = MaxUnpooling2D(pool_size)([conv_22, mask_2])
-
-    conv_23 = Convolution2D(128, (kernel, kernel), padding="same")(unpool_4)
-    conv_23 = BatchNormalization()(conv_23)
-    conv_23 = Activation("relu")(conv_23)
-    conv_24 = Convolution2D(64, (kernel, kernel), padding="same")(conv_23)
-    conv_24 = BatchNormalization()(conv_24)
-    conv_24 = Activation("relu")(conv_24)
-
-    unpool_5 = MaxUnpooling2D(pool_size)([conv_24, mask_1])
-
-    conv_25 = Convolution2D(64, (kernel, kernel), padding="same")(unpool_5)
-    conv_25 = BatchNormalization()(conv_25)
-    conv_25 = Activation("relu")(conv_25)
-
-    conv_26 = Convolution2D(n_labels, (1, 1), padding="same")(conv_25)
-    conv_26 = BatchNormalization()(conv_26)
-   
-    conv_26  = Reshape((n_labels,-1))(conv_26 )
-
-    conv_26  = Permute((2,1))(conv_26 )
-    outputs = Activation(output_mode)(conv_26)
-
-    model = Model(inputs=inputs, outputs=outputs, name="SegNet")
-    model.compile(loss='categorical_crossentropy',optimizer='sgd',metrics=['accuracy'])
-
-    return model
-def SegNet0(input_shape=(256,256,4),n_label=2): 
-    n_label=2
-    img_w=input_shape[0]
-    img_h=input_shape[0]
-    model = Sequential()  
-    #encoder  
-    model.add(Conv2D(64,(3,3),strides=(1,1),input_shape=(img_w,img_h,4),padding='same',activation='relu'))  
-    model.add(BatchNormalization())  
-    model.add(Conv2D(64,(3,3),strides=(1,1),padding='same',activation='relu'))  
-    model.add(BatchNormalization())  
-    model.add(MaxPooling2D(pool_size=(2,2)))  
-  #(128,128)  
-    model.add(Conv2D(128, (3, 3), strides=(1, 1), padding='same', activation='relu'))  
-    model.add(BatchNormalization())  
-    model.add(Conv2D(128, (3, 3), strides=(1, 1), padding='same', activation='relu'))  
-    model.add(BatchNormalization())  
-    model.add(MaxPooling2D(pool_size=(2, 2)))  
-  #(64,64)  
-    model.add(Conv2D(256, (3, 3), strides=(1, 1), padding='same', activation='relu'))  
-    model.add(BatchNormalization())  
-    model.add(Conv2D(256, (3, 3), strides=(1, 1), padding='same', activation='relu'))  
-    model.add(BatchNormalization())  
-    model.add(Conv2D(256, (3, 3), strides=(1, 1), padding='same', activation='relu'))  
-    model.add(BatchNormalization())  
-    model.add(MaxPooling2D(pool_size=(2, 2)))  
-  #(32,32)  
-    model.add(Conv2D(512, (3, 3), strides=(1, 1), padding='same', activation='relu'))  
-    model.add(BatchNormalization())  
-    model.add(Conv2D(512, (3, 3), strides=(1, 1), padding='same', activation='relu'))  
-    model.add(BatchNormalization())  
-    model.add(Conv2D(512, (3, 3), strides=(1, 1), padding='same', activation='relu'))  
-    model.add(BatchNormalization())  
-    model.add(MaxPooling2D(pool_size=(2, 2)))  
-  #(16,16)  
-    model.add(Conv2D(512, (3, 3), strides=(1, 1), padding='same', activation='relu'))  
-    model.add(BatchNormalization())  
-    model.add(Conv2D(512, (3, 3), strides=(1, 1), padding='same', activation='relu'))  
-    model.add(BatchNormalization())  
-    model.add(Conv2D(512, (3, 3), strides=(1, 1), padding='same', activation='relu'))  
-    model.add(BatchNormalization())  
-    model.add(MaxPooling2D(pool_size=(2, 2)))  
-  #(8,8)  
-  #decoder  
-    model.add(UpSampling2D(size=(2,2)))  
-  #(16,16)  
-    model.add(Conv2D(512, (3, 3), strides=(1, 1), padding='same', activation='relu'))  
-    model.add(BatchNormalization())  
-    model.add(Conv2D(512, (3, 3), strides=(1, 1), padding='same', activation='relu'))  
-    model.add(BatchNormalization())  
-    model.add(Conv2D(512, (3, 3), strides=(1, 1), padding='same', activation='relu'))  
-    model.add(BatchNormalization())  
-    model.add(UpSampling2D(size=(2, 2)))  
-  #(32,32)  
-    model.add(Conv2D(512, (3, 3), strides=(1, 1), padding='same', activation='relu'))  
-    model.add(BatchNormalization())  
-    model.add(Conv2D(512, (3, 3), strides=(1, 1), padding='same', activation='relu'))  
-    model.add(BatchNormalization())  
-    model.add(Conv2D(512, (3, 3), strides=(1, 1), padding='same', activation='relu'))  
-    model.add(BatchNormalization())  
-    model.add(UpSampling2D(size=(2, 2)))  
-  #(64,64)  
-    model.add(Conv2D(256, (3, 3), strides=(1, 1), padding='same', activation='relu'))  
-    model.add(BatchNormalization())  
-    model.add(Conv2D(256, (3, 3), strides=(1, 1), padding='same', activation='relu'))  
-    model.add(BatchNormalization())  
-    model.add(Conv2D(256, (3, 3), strides=(1, 1), padding='same', activation='relu'))  
-    model.add(BatchNormalization())  
-    model.add(UpSampling2D(size=(2, 2)))  
-    #(128,128)  
-    model.add(Conv2D(128, (3, 3), strides=(1, 1), padding='same', activation='relu'))  
-    model.add(BatchNormalization())  
-    model.add(Conv2D(128, (3, 3), strides=(1, 1), padding='same', activation='relu'))  
-    model.add(BatchNormalization())  
-    model.add(UpSampling2D(size=(2, 2)))  
-  #(256,256)  
-    model.add(Conv2D(64, (3, 3), strides=(1, 1), padding='same', activation='relu'))  
-    model.add(BatchNormalization())  
-    model.add(Conv2D(64, (3, 3), strides=(1, 1), padding='same', activation='relu'))  
-    model.add(BatchNormalization())  
-    model.add(Conv2D(n_label, (1, 1), strides=(1, 1), padding='same'))  
-    model.add(Reshape((n_label,img_w*img_h)))  
-  #axis=1和axis=2互换位置，等同于np.swapaxes(layer,1,2)  
-    model.add(Permute((2,1)))  
-    model.add(Activation('softmax'))  
-    model.compile(loss='categorical_crossentropy',optimizer='Adam',metrics=['accuracy'])  
-    model.summary()  
-    return model  
-def SegNet1(
-        input_shape=(256,256,4),
-        n_labels=2,
-        kernel=3,
-        pool_size=(2, 2),
-        output_mode="softmax"):
-    # encoder
-    inputs = Input(shape=input_shape)
-
-    conv_1 = Convolution2D(64, (kernel, kernel), padding="same")(inputs)
-    conv_1 = BatchNormalization()(conv_1)
-    conv_1 = Activation("relu")(conv_1)
-    conv_2 = Convolution2D(64, (kernel, kernel), padding="same")(conv_1)
-    conv_2 = BatchNormalization()(conv_2)
-    conv_2 = Activation("relu")(conv_2)
-
-    pool_1, mask_1 = MaxPoolingWithArgmax2D(pool_size)(conv_2)
-
-    conv_3 = Convolution2D(128, (kernel, kernel), padding="same")(pool_1)
-    conv_3 = BatchNormalization()(conv_3)
-    conv_3 = Activation("relu")(conv_3)
-    conv_4 = Convolution2D(128, (kernel, kernel), padding="same")(conv_3)
-    conv_4 = BatchNormalization()(conv_4)
-    conv_4 = Activation("relu")(conv_4)
-
-    pool_2, mask_2 = MaxPoolingWithArgmax2D(pool_size)(conv_4)
-
-    conv_5 = Convolution2D(256, (kernel, kernel), padding="same")(pool_2)
-    conv_5 = BatchNormalization()(conv_5)
-    conv_5 = Activation("relu")(conv_5)
-    conv_6 = Convolution2D(256, (kernel, kernel), padding="same")(conv_5)
-    conv_6 = BatchNormalization()(conv_6)
-    conv_6 = Activation("relu")(conv_6)
-    conv_7 = Convolution2D(256, (kernel, kernel), padding="same")(conv_6)
-    conv_7 = BatchNormalization()(conv_7)
-    conv_7 = Activation("relu")(conv_7)
-
-    pool_3, mask_3 = MaxPoolingWithArgmax2D(pool_size)(conv_7)
-
-    conv_8 = Convolution2D(512, (kernel, kernel), padding="same")(pool_3)
-    conv_8 = BatchNormalization()(conv_8)
-    conv_8 = Activation("relu")(conv_8)
-    conv_9 = Convolution2D(512, (kernel, kernel), padding="same")(conv_8)
-    conv_9 = BatchNormalization()(conv_9)
-    conv_9 = Activation("relu")(conv_9)
-    conv_10 = Convolution2D(512, (kernel, kernel), padding="same")(conv_9)
-    conv_10 = BatchNormalization()(conv_10)
-    conv_10 = Activation("relu")(conv_10)
-
-    pool_4, mask_4 = MaxPoolingWithArgmax2D(pool_size)(conv_10)
-
-
-    print("Build enceder done..")
-
-
-    unpool_2 = MaxUnpooling2D(pool_size)([pool_4, mask_4])
-
-    conv_17 = Convolution2D(512, (kernel, kernel), padding="same")(unpool_2)
-    conv_17 = BatchNormalization()(conv_17)
-    conv_17 = Activation("relu")(conv_17)
-    conv_18 = Convolution2D(512, (kernel, kernel), padding="same")(conv_17)
-    conv_18 = BatchNormalization()(conv_18)
-    conv_18 = Activation("relu")(conv_18)
-    conv_19 = Convolution2D(256, (kernel, kernel), padding="same")(conv_18)
-    conv_19 = BatchNormalization()(conv_19)
-    conv_19 = Activation("relu")(conv_19)
-
-    unpool_3 = MaxUnpooling2D(pool_size)([conv_19, mask_3])
-
-    conv_20 = Convolution2D(256, (kernel, kernel), padding="same")(unpool_3)
-    conv_20 = BatchNormalization()(conv_20)
-    conv_20 = Activation("relu")(conv_20)
-    conv_21 = Convolution2D(256, (kernel, kernel), padding="same")(conv_20)
-    conv_21 = BatchNormalization()(conv_21)
-    conv_21 = Activation("relu")(conv_21)
-    conv_22 = Convolution2D(128, (kernel, kernel), padding="same")(conv_21)
-    conv_22 = BatchNormalization()(conv_22)
-    conv_22 = Activation("relu")(conv_22)
-
-    #unpool_4 = Area_interp(pool_size)([conv_22, mask_2])
-    unpool_4 = Area_interp(pool_size)(conv_22)
-    conv_23 = Convolution2D(128, (kernel, kernel), padding="same")(unpool_4)
-    conv_23 = BatchNormalization()(conv_23)
-    conv_23 = Activation("relu")(conv_23)
-    conv_24 = Convolution2D(64, (kernel, kernel), padding="same")(conv_23)
-    conv_24 = BatchNormalization()(conv_24)
-    conv_24 = Activation("relu")(conv_24)
-
-    unpool_5 = MaxUnpooling2D(pool_size)([conv_24, mask_1])
-
-    conv_25 = Convolution2D(64, (kernel, kernel), padding="same")(unpool_5)
-    conv_25 = BatchNormalization()(conv_25)
-    conv_25 = Activation("relu")(conv_25)
-
-    conv_26 = Convolution2D(n_labels, (1, 1), padding="same")(conv_25)
-    conv_26 = BatchNormalization()(conv_26)
-   
-    conv_26  = Reshape((n_labels,-1))(conv_26 )
-
-    conv_26  = Permute((2,1))(conv_26 )
-    outputs = Activation(output_mode)(conv_26)
-
-    model = Model(inputs=inputs, outputs=outputs, name="SegNet")
-    model.compile(loss='categorical_crossentropy',optimizer='sgd',metrics=['accuracy'])
-
-    return model
-def SegNet2(
-        input_shape=(256,256,4),
-        n_labels=2,
-        kernel=3,
-        pool_size=(2, 2),
-        output_mode="softmax"):
-    # encoder
-    inputs = Input(shape=input_shape)
-    img_w=input_shape[1]
-    img_h=input_shape[2] 
-    conv_1 = Convolution2D(64, (kernel, kernel), padding="same")(inputs)
-    conv_1 = BatchNormalization()(conv_1)
-    conv_1 = Activation("relu")(conv_1)
-    conv_2 = Convolution2D(64, (kernel, kernel), padding="same")(conv_1)
-    conv_2 = BatchNormalization()(conv_2)
-    conv_2 = Activation("relu")(conv_2)
-
-    pool_1, mask_1 = MaxPoolingWithArgmax2D(pool_size)(conv_2)
-
-    conv_3 = Convolution2D(128, (kernel, kernel), padding="same")(pool_1)
-    conv_3 = BatchNormalization()(conv_3)
-    conv_3 = Activation("relu")(conv_3)
-    conv_4 = Convolution2D(128, (kernel, kernel), padding="same")(conv_3)
-    conv_4 = BatchNormalization()(conv_4)
-    conv_4 = Activation("relu")(conv_4)
-
-    pool_2, mask_2 = MaxPoolingWithArgmax2D(pool_size)(conv_4)
-
-    conv_5 = Convolution2D(256, (kernel, kernel), padding="same")(pool_2)
-    conv_5 = BatchNormalization()(conv_5)
-    conv_5 = Activation("relu")(conv_5)
-    conv_6 = Convolution2D(256, (kernel, kernel), padding="same")(conv_5)
-    conv_6 = BatchNormalization()(conv_6)
-    conv_6 = Activation("relu")(conv_6)
-    conv_7 = Convolution2D(256, (kernel, kernel), padding="same")(conv_6)
-    conv_7 = BatchNormalization()(conv_7)
-    conv_7 = Activation("relu")(conv_7)
-
-    pool_3, mask_3 = MaxPoolingWithArgmax2D(pool_size)(conv_7)
-
-    conv_8 = Convolution2D(512, (kernel, kernel), padding="same")(pool_3)
-    conv_8 = BatchNormalization()(conv_8)
-    conv_8 = Activation("relu")(conv_8)
-    conv_9 = Convolution2D(512, (kernel, kernel), padding="same")(conv_8)
-    conv_9 = BatchNormalization()(conv_9)
-    conv_9 = Activation("relu")(conv_9)
-    conv_10 = Convolution2D(512, (kernel, kernel), padding="same")(conv_9)
-    conv_10 = BatchNormalization()(conv_10)
-    conv_10 = Activation("relu")(conv_10)
-
-    pool_4, mask_4 = MaxPoolingWithArgmax2D(pool_size)(conv_10)
-
-    conv_11 = Convolution2D(512, (kernel, kernel), padding="same")(pool_4)
-    conv_11 = BatchNormalization()(conv_11)
-    conv_11 = Activation("relu")(conv_11)
-    conv_12 = Convolution2D(512, (kernel, kernel), padding="same")(conv_11)
-    conv_12 = BatchNormalization()(conv_12)
-    conv_12 = Activation("relu")(conv_12)
-    conv_13 = Convolution2D(512, (kernel, kernel), padding="same")(conv_12)
-    conv_13 = BatchNormalization()(conv_13)
-    conv_13 = Activation("relu")(conv_13)
-
-    pool_5, mask_5 = MaxPoolingWithArgmax2D(pool_size)(conv_13)
- 
+	
     conv_13_ = Convolution2D(1024, (kernel, kernel), padding="same")(pool_5)
     conv_13_ = BatchNormalization()(conv_13_)
     conv_13_ = Activation("relu")(conv_13_)
@@ -421,11 +102,12 @@ def SegNet2(
     conv_13_ = Convolution2D(1024, (kernel, kernel), padding="same")(conv_13_)
     conv_13_ = BatchNormalization()(conv_13_)
     conv_13_ = Activation("relu")(conv_13_)	
- 
+	
+	
     pool_6, mask_6 = MaxPoolingWithArgmax2D(pool_size)(conv_13_)
     print("Build enceder done..")# decoder
     unpool_0 = MaxUnpooling2D(pool_size)([pool_6, mask_6])
- 
+	
     conv_14_ = Convolution2D(1024, (kernel, kernel), padding="same")(unpool_0)
     conv_14_ = BatchNormalization()(conv_14_)
     conv_14_ = Activation("relu")(conv_14_)
@@ -474,7 +156,12 @@ def SegNet2(
 
     unpool_4 = MaxUnpooling2D(pool_size)([conv_22, mask_2])
 
-    conv_23 = Convolution2D(128, (kernel, kernel), padding="same")(unpool_4)
+    conv_side = Convolution2D(6, (1, 1), padding="same")(inputs_2)
+    conv_side = BatchNormalization()(conv_side)
+    conv_side = Convolution2D(128, (3, 3), padding="same")(conv_side) 
+    
+    conv_23 = Concatenate(axis=-1)([ unpool_4 ,conv_side])
+    conv_23 = Convolution2D(128, (kernel, kernel), padding="same")(conv_23)
     conv_23 = BatchNormalization()(conv_23)
     conv_23 = Activation("relu")(conv_23)
     conv_24 = Convolution2D(64, (kernel, kernel), padding="same")(conv_23)
@@ -495,7 +182,194 @@ def SegNet2(
     conv_26  = Permute((2,1))(conv_26 )
     outputs = Activation(output_mode)(conv_26)
 
-    model = Model(inputs=inputs, outputs=outputs, name="SegNet")
+    model = Model(inputs=[inputs,inputs_2], outputs=outputs, name="SegNet2In")
     model.compile(loss='categorical_crossentropy',optimizer='sgd',metrics=['accuracy'])
 
     return model
+
+def SegNet2In_2(
+        input_shape=[(256,256,4),(128,128,1)],
+        n_labels=2,
+        kernel=3,
+        pool_size=(2, 2),
+        output_mode="softmax"):
+    # encoder
+    
+    inputs= Input(shape=(256,256,4), name='Input10')  
+    inputs_2 = Input(shape=(128,128,3), name='Input20')  
+    img_w=input_shape[0][0]
+    img_h=input_shape[0][1] 
+    conv_1 = Convolution2D(64, (kernel, kernel), padding="same")(inputs)
+    conv_1 = BatchNormalization()(conv_1)
+    conv_1 = Activation("relu")(conv_1)
+    conv_2 = Convolution2D(64, (kernel, kernel), padding="same")(conv_1)
+    conv_2 = BatchNormalization()(conv_2)
+    conv_2 = Activation("relu")(conv_2)
+
+
+    pool_1 = MaxPooling2D(pool_size)(conv_2)
+    #128*128*4
+	#################
+	# side
+    conv_side = Convolution2D(64, (1, 1), padding="same")(inputs_2)
+    conv_side = BatchNormalization()(conv_side)
+    conv_side = Activation("relu")(conv_side)
+    conv_side = Convolution2D(64, (3, 3), padding="same")(conv_side) 
+    conv_side = BatchNormalization()(conv_side)
+    conv_side = Activation("relu")(conv_side)
+    #################
+	# concateentate
+    conv_3 = Concatenate(axis=-1)([pool_1 ,conv_side])
+    #################
+    conv_3 = Convolution2D(128, (kernel, kernel), padding="same")(conv_3)
+    conv_3 = BatchNormalization()(conv_3)
+    conv_3 = Activation("relu")(conv_3)
+    conv_4 = Convolution2D(128, (kernel, kernel), padding="same")(conv_3)
+    conv_4 = BatchNormalization()(conv_4)
+    conv_4 = Activation("relu")(conv_4)
+
+    pool_2  = MaxPooling2D(pool_size)(conv_4)
+
+    conv_5 = Convolution2D(256, (kernel, kernel), padding="same")(pool_2)
+    conv_5 = BatchNormalization()(conv_5)
+    conv_5 = Activation("relu")(conv_5)
+    conv_6 = Convolution2D(256, (kernel, kernel), padding="same")(conv_5)
+    conv_6 = BatchNormalization()(conv_6)
+    conv_6 = Activation("relu")(conv_6)
+    conv_7 = Convolution2D(256, (kernel, kernel), padding="same")(conv_6)
+    conv_7 = BatchNormalization()(conv_7)
+    conv_7 = Activation("relu")(conv_7)
+
+    pool_3 = MaxPooling2D(pool_size)(conv_7)
+
+    conv_8 = Convolution2D(512, (kernel, kernel), padding="same")(pool_3)
+    conv_8 = BatchNormalization()(conv_8)
+    conv_8 = Activation("relu")(conv_8)
+    conv_9 = Convolution2D(512, (kernel, kernel), padding="same")(conv_8)
+    conv_9 = BatchNormalization()(conv_9)
+    conv_9 = Activation("relu")(conv_9)
+    conv_10 = Convolution2D(512, (kernel, kernel), padding="same")(conv_9)
+    conv_10 = BatchNormalization()(conv_10)
+    conv_10 = Activation("relu")(conv_10)
+
+    pool_4 = MaxPooling2D(pool_size)(conv_10)
+
+    conv_11 = Convolution2D(512, (kernel, kernel), padding="same")(pool_4)
+    conv_11 = BatchNormalization()(conv_11)
+    conv_11 = Activation("relu")(conv_11)
+    conv_12 = Convolution2D(512, (kernel, kernel), padding="same")(conv_11)
+    conv_12 = BatchNormalization()(conv_12)
+    conv_12 = Activation("relu")(conv_12)
+    conv_13 = Convolution2D(512, (kernel, kernel), padding="same")(conv_12)
+    conv_13 = BatchNormalization()(conv_13)
+    conv_13 = Activation("relu")(conv_13)
+
+    pool_5 = MaxPooling2D(pool_size)(conv_13)
+	
+    conv_13_ = Convolution2D(1024, (kernel, kernel), padding="same")(pool_5)
+    conv_13_ = BatchNormalization()(conv_13_)
+    conv_13_ = Activation("relu")(conv_13_)
+    conv_13_ = Convolution2D(1024, (kernel, kernel), padding="same")(conv_13_)
+    conv_13_ = BatchNormalization()(conv_13_)
+    conv_13_ = Activation("relu")(conv_13_)
+    conv_13_ = Convolution2D(1024, (kernel, kernel), padding="same")(conv_13_)
+    conv_13_ = BatchNormalization()(conv_13_)
+    conv_13_ = Activation("relu")(conv_13_)	
+	
+	
+    pool_6 = MaxPooling2D(pool_size)(conv_13_)
+    print("Build enceder done..")# decoder
+    unpool_0 = UpSampling2D(pool_size)(pool_6)
+	
+    conv_14_ = Convolution2D(1024, (kernel, kernel), padding="same")(unpool_0)
+    conv_14_ = BatchNormalization()(conv_14_)
+    conv_14_ = Activation("relu")(conv_14_)
+    conv_14_ = Convolution2D(1024, (kernel, kernel), padding="same")(conv_14_)
+    conv_14_ = BatchNormalization()(conv_14_)
+    conv_14_ = Activation("relu")(conv_14_)
+    conv_14_ = Convolution2D(512, (kernel, kernel), padding="same")(conv_14_)
+    conv_14_ = BatchNormalization()(conv_14_)
+    conv_14_ = Activation("relu")(conv_14_)
+
+    unpool_1 = UpSampling2D(pool_size)(conv_14_)
+
+    conv_14 = Convolution2D(512, (kernel, kernel), padding="same")(unpool_1)
+    conv_14 = BatchNormalization()(conv_14)
+    conv_14 = Activation("relu")(conv_14)
+    conv_15 = Convolution2D(512, (kernel, kernel), padding="same")(conv_14)
+    conv_15 = BatchNormalization()(conv_15)
+    conv_15 = Activation("relu")(conv_15)
+    conv_16 = Convolution2D(512, (kernel, kernel), padding="same")(conv_15)
+    conv_16 = BatchNormalization()(conv_16)
+    conv_16 = Activation("relu")(conv_16)
+
+    unpool_2 = UpSampling2D(pool_size)(conv_16)
+
+    conv_17 = Convolution2D(512, (kernel, kernel), padding="same")(unpool_2)
+    conv_17 = BatchNormalization()(conv_17)
+    conv_17 = Activation("relu")(conv_17)
+    conv_18 = Convolution2D(512, (kernel, kernel), padding="same")(conv_17)
+    conv_18 = BatchNormalization()(conv_18)
+    conv_18 = Activation("relu")(conv_18)
+    conv_19 = Convolution2D(256, (kernel, kernel), padding="same")(conv_18)
+    conv_19 = BatchNormalization()(conv_19)
+    conv_19 = Activation("relu")(conv_19)
+
+    unpool_3 = UpSampling2D(pool_size)(conv_19)
+
+    conv_20 = Convolution2D(256, (kernel, kernel), padding="same")(unpool_3)
+    conv_20 = BatchNormalization()(conv_20)
+    conv_20 = Activation("relu")(conv_20)
+    conv_21 = Convolution2D(256, (kernel, kernel), padding="same")(conv_20)
+    conv_21 = BatchNormalization()(conv_21)
+    conv_21 = Activation("relu")(conv_21)
+    conv_22 = Convolution2D(128, (kernel, kernel), padding="same")(conv_21)
+    conv_22 = BatchNormalization()(conv_22)
+    conv_22 = Activation("relu")(conv_22)
+
+    unpool_4 = UpSampling2D(pool_size)(conv_22)
+####side
+    # conv_side = Convolution2D(6, (1, 1), padding="same")(inputs_2)
+    # conv_side = BatchNormalization()(conv_side)
+    # conv_side = Activation("relu")(conv_side)
+    # conv_side = Convolution2D(128, (3, 3), padding="same")(conv_side) 
+    # conv_side = BatchNormalization()(conv_side)
+    # conv_side = Activation("relu")(conv_side)
+	
+    # conv_23 = Concatenate(axis=-1)([ unpool_4 ,conv_side])
+
+    conv_23 = Convolution2D(128, (kernel, kernel), padding="same")(unpool_4)
+    conv_23 = BatchNormalization()(conv_23)
+    conv_23 = Activation("relu")(conv_23)
+    conv_24 = Convolution2D(64, (kernel, kernel), padding="same")(conv_23)
+    conv_24 = BatchNormalization()(conv_24)
+    conv_24 = Activation("relu")(conv_24)
+
+    unpool_5 =UpSampling2D(pool_size)(conv_24)
+
+    conv_25 = Convolution2D(64, (kernel, kernel), padding="same")(unpool_5)
+    conv_25 = BatchNormalization()(conv_25)
+    conv_25 = Activation("relu")(conv_25)
+
+    conv_26 = Convolution2D(n_labels, (1, 1), padding="same")(conv_25)
+    conv_26 = BatchNormalization()(conv_26)
+   
+    conv_26  = Reshape((n_labels,-1))(conv_26 )
+
+    conv_26  = Permute((2,1))(conv_26 )
+    outputs = Activation(output_mode)(conv_26)
+
+    model = Model(inputs=[inputs,inputs_2], outputs=outputs, name="SegNet2In")
+    model.compile(loss='categorical_crossentropy',optimizer='sgd',metrics=['accuracy'])
+
+    return model
+if __name__ == '__main__':
+    m1 = SegNet2In()
+    m2 = SegNet2In_2()
+    m2.summary()
+    # print(m.get_weights()[2]) # 看看权重改变没，加载vgg权重测试用
+    from keras.utils import plot_model
+    plot_model(m1, show_shapes=True, to_file='model-SegNet2In.png')
+    plot_model(m2, show_shapes=True, to_file='model-SegNet2In_2.png')
+    #print(len(m.layers))
+    #

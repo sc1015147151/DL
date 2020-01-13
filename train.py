@@ -8,13 +8,13 @@ import numpy as np
 from keras import *
 from keras.models import Sequential  
 from keras.layers import *
-from keras.layers import Input
+from keras.applications import vgg16
 from keras.utils.np_utils import to_categorical  
 from keras.preprocessing.image import img_to_array  
 from keras.callbacks import ModelCheckpoint ,TensorBoard
-from SegNet import *
-from FCN32 import *
-from UNET import *
+from Models.SegNet import *
+from Models.FCN32 import *
+from Models.UNET import *
 from Models.utils import *
 from sklearn.preprocessing import LabelEncoder  
 from PIL import Image  
@@ -30,10 +30,11 @@ import gdal
 seed = 7  
 np.random.seed(seed)  
 # data for training  
-from keras.applications import vgg16
 
-def generateDataTF(batch_size,img_w,img_h,n_label,image_names=[],label_names=[]): 
-    print ('gen-Sub-Image-Data...')
+
+def generateDataTF(batch_size,img_w,img_h,n_label,image_names=[],label_names=[],image_file_path ='D:\Python\seg-data\data_MB/'): 
+    print ('开始随机生成训练数据中。。。\nImage-Data-Generating...')
+    image_filepath=image_file_path
     image_filepath ='D:\Python\seg-data\data_MB/'
     batch_num=0
     while True:   
@@ -78,7 +79,7 @@ def train(key,EPOCHS = 10,BatchSize = 4,train_numb_per_epoch = 10*8,valid_rate =
     valid_numb = train_numb*valid_rate
 
     method = {
-        "UNET": unet,
+        "UNET": UNet,
         "FCN32": FCN32,
         'SegNet': SegNet,
         'SegNet1': SegNet1,
@@ -98,11 +99,11 @@ def train(key,EPOCHS = 10,BatchSize = 4,train_numb_per_epoch = 10*8,valid_rate =
     print ("the number of train data is",train_numb,train_numb//BS)  
     print ("the number of val data is",valid_numb,valid_numb//BS)
 
-    H = m.fit_generator(generator=generateDataTF(BS,img_w,img_h,2,['2016.tif','2017.tif','2019.tif'],['2016.png','2017.png','2019.png']),
+    H = m.fit_generator(generator=generateDataTF(BS,img_w,img_h,2,['2019.tif','2019-3.tif','2016.tif'],['2019.png','2019-3.png','2016.png']),
                             steps_per_epoch=train_numb_per_epoch,
                             epochs=EPOCHS,
                             verbose=0,
-                            validation_data=generateDataTF(BS,img_w,img_h,2,['2016.tif','2017.tif','2019.tif'],['2016.png','2017.png','2019.png']),
+                            validation_data=generateDataTF(BS,img_w,img_h,2,['2019.tif','2019-3.tif','2016.tif','2017.tif'],['2019.png','2019-3.png','2016.png','2017.png']),
                             validation_steps=train_numb_per_epoch*valid_rate,
                             callbacks=callableTF,
                             max_q_size=1)  
@@ -130,6 +131,68 @@ def args_parse():
     args = vars(ap.parse_args())    
     return args
 
+    print ('开始随机生成训练数据中。。。\nImage-Data-Generating...')
+    img_size_20m=int(img_h/2)
+    image_name_10m=image_names[0]
+    image_name_20m=image_names[1]
+    label_name_10m=label_names[0]
+    label_name_20m=label_names[1]
+    image_names=image_name_10m
+    label_names=label_name_10m
+    image_filepath=image_file_path
+    #image_filepath ='D:\Python\seg-data\data_MB/'
+    batch_num=0
+    while True:   
+        bs=batch_size
+        
+        dataset_10m = gdal.Open(image_filepath+image_name_10m[batch_num%len(image_name_10m)])
+        im_width_10m = dataset_10m.RasterXSize #栅格矩阵的列数
+        im_height_10m = dataset_10m.RasterYSize #栅格矩阵的行数
+        label_data_10m=cv2.imread(image_filepath+label_name_10m[batch_num%len(label_name_10m)],cv2.IMREAD_GRAYSCALE)
+        #yield(label_data.shape)
+        train_data_10m = []  
+        train_label_10m =  []  
+
+        dataset_20m = gdal.Open(image_filepath+image_name_20m[batch_num%len(image_name_20m)])
+        im_width_20m = dataset_20m.RasterXSize #栅格矩阵的列数
+        im_height_20m = dataset_20m.RasterYSize #栅格矩阵的行数
+        label_data_20m=cv2.imread(image_filepath+label_name_20m[batch_num%len(label_name_20m)],cv2.IMREAD_GRAYSCALE)
+        #yield(label_data.shape)
+        train_data_20m = []  
+        train_label_20m =  []  
+        #影像可截取点起点
+        im_height=np.floor(np.min([im_height_20m,im_height_10m/2])- img_h/2 - 1).astype(int)
+        im_width=np.floor(np.min([im_width_20m,im_width_10m/2])- img_w/2 - 1).astype(int)
+        i=0
+        while (bs-i)!=0:
+            #print(im_height,im_width)
+            random_width = random.randint(0, np.floor(np.min([im_width_20m,im_width_10m/2]) - img_w/2 - 1))
+            random_height = random.randint(0, np.min([im_height_20m,im_height_10m/2]) - img_h - 1)
+            #print(type(random_width),type(random_height),type(img_size_20m),type(img_size_20m))
+             #tif_roi_20=dataset_20m.ReadAsArray(0,0,127,127)
+            tif_roi_10=dataset_10m.ReadAsArray(random_width*2,random_height*2,img_size_20m*2,img_size_20m*2)
+           #tif_roi_10=dataset_10m.ReadAsArray(0,0,127,127)
+            tif_roi_20=dataset_20m.ReadAsArray(random_width,random_height,int(img_size_20m),int(img_size_20m))
+            tif_roi_20=dataset_20m.ReadAsArray(0,0,255,255)
+            if (np.sum(tif_roi_20[0]==0)/(im_width*im_height))<0.5:
+                data_roi_10=cv2.merge(tif_roi_10)
+                data_roi_20=cv2.merge(tif_roi_20)
+                label_roi_10 = to_categorical((label_data_10m[random_height: random_height + (img_size_20m*2) , random_width: random_width + (img_size_20m*2)]).flatten(), num_classes=n_label)
+                label_roi_20 = to_categorical((label_data_20m[random_height: random_height +img_size_20m, random_width: random_width + img_size_20m]).flatten(), num_classes=n_label)
+                train_data_10m.append( data_roi_10)  
+                train_data_20m.append( data_roi_20) 
+                train_label_10m.append(label_roi_10)
+                train_label_20m.append(label_roi_20)
+                i=i+1
+                #yield(random_width,img_w,random_height,img_h)
+                #yield(np.array(data_roi).shape,np.array(label_roi).shape)    
+        #yield(np.array(train_data).shape,np.array(train_label).shape)    
+        yield(np.array([train_data_10m,train_data_20m]),np.array([train_label_10m,train_label_20m]))
+        batch_num=batch_num+1
+#image_names_set=['test.tif']
+#label_names_set=['test_label.png']
+#for i in(generateDataTF(8,256,256,2,image_names_set,label_names_set)):
+#    print(i)
 if __name__ == '__main__':
 
     args = args_parse()
