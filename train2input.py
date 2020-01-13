@@ -1,4 +1,7 @@
 #coding=utf-8
+#########################
+#多输入模型训练代码
+#########################
 import matplotlib
 import os
 import argparse

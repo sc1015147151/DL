@@ -8,11 +8,14 @@ import numpy as np
 from keras import *
 from keras.models import Sequential  
 from keras.layers import *
-from keras.layers.core import *
 from keras.layers import Input
 from keras.utils.np_utils import to_categorical  
 from keras.preprocessing.image import img_to_array  
 from keras.callbacks import ModelCheckpoint ,TensorBoard
+
+from SegNet import *
+from FCN32 import *
+from Models.utils import *
 from sklearn.preprocessing import LabelEncoder  
 from PIL import Image  
 import matplotlib.pyplot as plt  
@@ -74,10 +77,5 @@ def FCN32(
     fcn = Model(inputs=img_input, outputs=o)
     # mymodel.summary()
     return fcn
-if __name__ == '__main__':
-    m =  FCN32()
-    from keras.utils import plot_model
-    plot_model(m, show_shapes=True, to_file='model_FCN32.png')
-    print(len(m.layers))
- 
-    m.summary()
+#m = FCN32()
+#m.summary()

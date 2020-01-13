@@ -1,4 +1,6 @@
 #coding=utf-8
+
+#编码器分类模型训练
 import matplotlib
 import argparse
 matplotlib.use("Agg")
