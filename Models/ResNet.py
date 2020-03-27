@@ -11,10 +11,12 @@ from keras.layers import Input
 from keras.utils.np_utils import to_categorical  
 from keras.preprocessing.image import img_to_array  
 from keras.callbacks import ModelCheckpoint ,TensorBoard
-
-from SegNet import *
-from FCN32 import *
-from Models.utils import *
+try:
+    from Models.utils import *
+    from Models.Area_interp import *
+except:
+    from utils import *
+    from Area_interp import *
 from sklearn.preprocessing import LabelEncoder  
 from PIL import Image  
 import matplotlib.pyplot as plt  
@@ -85,15 +87,29 @@ def ResNet34(input_shape=(256,256,4),
     x = ZeroPadding2D((3,3))(inpt)
     x = Conv2d_BN(x,nb_filter=64,kernel_size=(7,7),strides=(2,2),padding='valid')
     x = MaxPooling2D(pool_size=(3,3),strides=(2,2),padding='same')(x)
+
+    xs = ZeroPadding2D((3,3))(inpt)
+    xs = Conv2d_BN(xs,nb_filter=64,kernel_size=(7,7),strides=(2,2),padding='valid')
+    xs = MaxPooling2D(pool_size=(3,3),strides=(2,2),padding='same')(xs)
 #(56,56,64)
     x = Conv_Block(x,nb_filter=64,kernel_size=(3,3))
     x = Conv_Block(x,nb_filter=64,kernel_size=(3,3))
     x = Conv_Block(x,nb_filter=64,kernel_size=(3,3))
+
+    xs = Conv_Block(xs,nb_filter=64,kernel_size=(3,3))
+    xs = Conv_Block(xs,nb_filter=64,kernel_size=(3,3))
+    xs = Conv_Block(xs,nb_filter=64,kernel_size=(3,3))
+    
     #(28,28,128)
     x = Conv_Block(x,nb_filter=128,kernel_size=(3,3),strides=(2,2),with_conv_shortcut=True)
     x = Conv_Block(x,nb_filter=128,kernel_size=(3,3))
     x = Conv_Block(x,nb_filter=128,kernel_size=(3,3))
     x = Conv_Block(x,nb_filter=128,kernel_size=(3,3))
+
+    xs = Conv_Block(xs,nb_filter=128,kernel_size=(3,3),strides=(2,2),with_conv_shortcut=True)
+    xs = Conv_Block(xs,nb_filter=128,kernel_size=(3,3))
+    xs = Conv_Block(xs,nb_filter=128,kernel_size=(3,3))
+    xs = Conv_Block(xs,nb_filter=128,kernel_size=(3,3))
 #(14,14,256)
     x = Conv_Block(x,nb_filter=256,kernel_size=(3,3),strides=(2,2),with_conv_shortcut=True)
     x = Conv_Block(x,nb_filter=256,kernel_size=(3,3))
@@ -101,11 +117,29 @@ def ResNet34(input_shape=(256,256,4),
     x = Conv_Block(x,nb_filter=256,kernel_size=(3,3))
     x = Conv_Block(x,nb_filter=256,kernel_size=(3,3))
     x = Conv_Block(x,nb_filter=256,kernel_size=(3,3))
+
+
+    xs = Conv_Block(xs,nb_filter=256,kernel_size=(3,3),strides=(2,2),with_conv_shortcut=True)
+    xs = Conv_Block(xs,nb_filter=256,kernel_size=(3,3))
+    xs = Conv_Block(xs,nb_filter=256,kernel_size=(3,3))
+    xs = Conv_Block(xs,nb_filter=256,kernel_size=(3,3))
+    xs = Conv_Block(xs,nb_filter=256,kernel_size=(3,3))
+    xs = Conv_Block(xs,nb_filter=256,kernel_size=(3,3))
 #(7,7,512)
+
     x = Conv_Block(x,nb_filter=512,kernel_size=(3,3),strides=(2,2),with_conv_shortcut=True)
     x = Conv_Block(x,nb_filter=512,kernel_size=(3,3))
     x = Conv_Block(x,nb_filter=512,kernel_size=(3,3))
     x = AveragePooling2D(pool_size=(7,7))(x)
+
+    xs = Conv_Block(xs,nb_filter=512,kernel_size=(3,3),strides=(2,2),with_conv_shortcut=True)
+    xs = Conv_Block(xs,nb_filter=512,kernel_size=(3,3))
+    xs = Conv_Block(xs,nb_filter=512,kernel_size=(3,3))
+    xs = AveragePooling2D(pool_size=(7,7))(xs)
+
+    x = Concatenate()([x, xs])
+
+    
     x = Flatten()(x)
 
     x = Dense(2,activation='softmax')(x)

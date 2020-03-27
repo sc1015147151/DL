@@ -12,10 +12,6 @@ from keras.layers import Input
 from keras.utils.np_utils import to_categorical  
 from keras.preprocessing.image import img_to_array  
 from keras.callbacks import ModelCheckpoint ,TensorBoard
-
-from SegNet import *
-from FCN32 import *
-from Models.utils import *
 from sklearn.preprocessing import LabelEncoder  
 from PIL import Image  
 import matplotlib.pyplot as plt  
@@ -25,6 +21,12 @@ import os
 from tqdm import tqdm  
 from keras import backend as K 
 from keras.applications import vgg16
+try:
+    from Models.utils import *
+except:
+    from utils import *
+
+
 def FCN32(
           input_shape=(256,256,4),
           n_labels=2,

@@ -14,9 +14,12 @@ from keras.layers import Input
 from keras.utils.np_utils import to_categorical  
 from keras.preprocessing.image import img_to_array  
 from keras.callbacks import ModelCheckpoint ,TensorBoard
-from SegNet import *
-from FCN32 import *
-from Models.utils import *
+try:
+    from Models.utils import *
+    from Models.Area_interp import *
+except:
+    from utils import *
+    from Area_interp import *
 from sklearn.preprocessing import LabelEncoder  
 from PIL import Image  
 import matplotlib.pyplot as plt  

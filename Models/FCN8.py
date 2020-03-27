@@ -48,7 +48,7 @@ def FCN8_helper(nClasses, input_height, input_width):
     return fcn8
 
 
-def FCN8(nClasses, input_height, input_width):
+def FCN8(nClasses=2, input_height=256, input_width=256):
 
     fcn8 = FCN8_helper(nClasses, input_height, input_width)
 

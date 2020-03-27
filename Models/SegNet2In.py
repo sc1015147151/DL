@@ -11,8 +11,6 @@ from keras.layers import Input
 from keras.utils.np_utils import to_categorical  
 from keras.preprocessing.image import img_to_array  
 from keras.callbacks import ModelCheckpoint ,TensorBoard
-
-from utils import *
 from sklearn.preprocessing import LabelEncoder  
 from PIL import Image  
 import matplotlib.pyplot as plt  
@@ -25,6 +23,12 @@ from keras.applications import vgg16
 from keras.layers import Input
 from warnings import simplefilter
 simplefilter(action='ignore', category=FutureWarning)
+try:
+    from Models.utils import *
+except:
+    from utils import *
+
+
 def SegNet2In(
         input_shape=[(256,256,4),(128,128,1)],
         n_labels=2,
@@ -92,7 +96,7 @@ def SegNet2In(
     conv_13 = Activation("relu")(conv_13)
 
     pool_5, mask_5 = MaxPoolingWithArgmax2D(pool_size)(conv_13)
-	
+    
     conv_13_ = Convolution2D(1024, (kernel, kernel), padding="same")(pool_5)
     conv_13_ = BatchNormalization()(conv_13_)
     conv_13_ = Activation("relu")(conv_13_)
@@ -101,13 +105,12 @@ def SegNet2In(
     conv_13_ = Activation("relu")(conv_13_)
     conv_13_ = Convolution2D(1024, (kernel, kernel), padding="same")(conv_13_)
     conv_13_ = BatchNormalization()(conv_13_)
-    conv_13_ = Activation("relu")(conv_13_)	
-	
-	
+    conv_13_ = Activation("relu")(conv_13_) 
+ 
     pool_6, mask_6 = MaxPoolingWithArgmax2D(pool_size)(conv_13_)
     print("Build enceder done..")# decoder
     unpool_0 = MaxUnpooling2D(pool_size)([pool_6, mask_6])
-	
+ 
     conv_14_ = Convolution2D(1024, (kernel, kernel), padding="same")(unpool_0)
     conv_14_ = BatchNormalization()(conv_14_)
     conv_14_ = Activation("relu")(conv_14_)
@@ -209,8 +212,8 @@ def SegNet2In_2(
 
     pool_1 = MaxPooling2D(pool_size)(conv_2)
     #128*128*4
-	#################
-	# side
+    #################
+    # side
     conv_side = Convolution2D(64, (1, 1), padding="same")(inputs_2)
     conv_side = BatchNormalization()(conv_side)
     conv_side = Activation("relu")(conv_side)
@@ -218,7 +221,7 @@ def SegNet2In_2(
     conv_side = BatchNormalization()(conv_side)
     conv_side = Activation("relu")(conv_side)
     #################
-	# concateentate
+    # concateentate
     conv_3 = Concatenate(axis=-1)([pool_1 ,conv_side])
     #################
     conv_3 = Convolution2D(128, (kernel, kernel), padding="same")(conv_3)
@@ -265,7 +268,7 @@ def SegNet2In_2(
     conv_13 = Activation("relu")(conv_13)
 
     pool_5 = MaxPooling2D(pool_size)(conv_13)
-	
+    
     conv_13_ = Convolution2D(1024, (kernel, kernel), padding="same")(pool_5)
     conv_13_ = BatchNormalization()(conv_13_)
     conv_13_ = Activation("relu")(conv_13_)
@@ -274,13 +277,13 @@ def SegNet2In_2(
     conv_13_ = Activation("relu")(conv_13_)
     conv_13_ = Convolution2D(1024, (kernel, kernel), padding="same")(conv_13_)
     conv_13_ = BatchNormalization()(conv_13_)
-    conv_13_ = Activation("relu")(conv_13_)	
-	
-	
+    conv_13_ = Activation("relu")(conv_13_) 
+    
+    
     pool_6 = MaxPooling2D(pool_size)(conv_13_)
     print("Build enceder done..")# decoder
     unpool_0 = UpSampling2D(pool_size)(pool_6)
-	
+    
     conv_14_ = Convolution2D(1024, (kernel, kernel), padding="same")(unpool_0)
     conv_14_ = BatchNormalization()(conv_14_)
     conv_14_ = Activation("relu")(conv_14_)
@@ -335,7 +338,6 @@ def SegNet2In_2(
     # conv_side = Convolution2D(128, (3, 3), padding="same")(conv_side) 
     # conv_side = BatchNormalization()(conv_side)
     # conv_side = Activation("relu")(conv_side)
-	
     # conv_23 = Concatenate(axis=-1)([ unpool_4 ,conv_side])
 
     conv_23 = Convolution2D(128, (kernel, kernel), padding="same")(unpool_4)
@@ -364,6 +366,7 @@ def SegNet2In_2(
 
     return model
 if __name__ == '__main__':
+    from  utils import *
     m1 = SegNet2In()
     m2 = SegNet2In_2()
     m2.summary()

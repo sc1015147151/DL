@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import argparse
 import numpy as np 
 import pandas as pd
-from scipy.interpolate import spline
+from scipy.interpolate import make_interp_spline as spline
 
 from keras import *
 from keras.models import Sequential  
@@ -17,10 +17,13 @@ from keras.layers import Input
 from keras.utils.np_utils import to_categorical  
 from keras.preprocessing.image import img_to_array  
 from keras.callbacks import ModelCheckpoint ,TensorBoard
-from VGG import *
-from ResNet import *
-from GooLeNet import *
-from AlexNet import *
+from Models import *
+from Models.DeeplabEncoder import *
+from Models.VGG import *
+from Models.Xception import *
+from Models.ResNet import *
+from Models.GooLeNet import *
+from Models.AlexNet import *
 from Models.utils import *
 from sklearn.preprocessing import LabelEncoder  
 from PIL import Image  
@@ -39,18 +42,18 @@ np.random.seed(seed)
 from keras.applications import vgg16
 
 def generateDataTF(batch_size,img_w,img_h,n_label,image_names=[],label_names=[]): 
-    print ('gen-Sub-Image-Data...')
+    print ('开始随机生成训练数据中。。。\nImage-Data-Generating...\n')
     image_filepath ='D:\Python\seg-data\data_MB/'
     batch_num=0
 
     while True:   
         bs=batch_size
         
-        dataset = gdal.Open(image_filepath+image_names[batch_num%len(image_names)])
+        dataset = gdal.Open(os.path.join(image_filepath,image_names[batch_num%len(image_names)]))
         im_width = dataset.RasterXSize #栅格矩阵的列数
         im_height = dataset.RasterYSize #栅格矩阵的行数
         #print(im_width ,im_height)
-        label_data=cv2.imread(image_filepath+label_names[batch_num%len(image_names)],cv2.IMREAD_GRAYSCALE)
+        label_data=cv2.imread(os.path.join(image_filepath,label_names[batch_num%len(image_names)]),cv2.IMREAD_GRAYSCALE)
         #yield(label_data.shape)
         train_data = []  
         train_label =  []  
@@ -61,19 +64,16 @@ def generateDataTF(batch_size,img_w,img_h,n_label,image_names=[],label_names=[])
             tif_roi=dataset.ReadAsArray(random_width,random_height,img_w,img_h)
             if (np.sum(tif_roi[0]==0)/(im_width*im_height))<0.5:
                 data_roi=cv2.merge(tif_roi)  
-                label_roi = to_categorical(range(n_label))[np.max(label_data[random_height: random_height + img_h , random_width: random_width + img_w])]
+                tmp_img = [np.max(label_data[random_height: random_height + img_h , random_width: random_width + img_w])]
+                label_roi = to_categorical([np.max(label_data[random_height: random_height + img_h , random_width: random_width + img_w])],2).reshape(-1)
+
                 train_data.append( data_roi)  
                 train_label.append(label_roi)
                 i=i+1
-                #yield(random_width,img_w,random_height,img_h)
-                #yield(np.array(data_roi).shape,np.array(label_roi).shape)    
-        #yield(np.array(train_data).shape,np.array(train_label).shape)    
+                
         yield(np.array(train_data),np.array(train_label))
         batch_num=batch_num+1
-#image_names_set=['test.tif']
-#label_names_set=['test_label.png']
-#for i in(generateDataTF(8,256,256,2,image_names_set,label_names_set)):
-#    print(i)
+
 def train(key,EPOCHS = 10,BatchSize = 4,train_numb_per_epoch = 10*8,valid_rate = 0.2): 
     key=args['key']
     EPOCHS = int(args['epochs'])
@@ -85,6 +85,8 @@ def train(key,EPOCHS = 10,BatchSize = 4,train_numb_per_epoch = 10*8,valid_rate =
     valid_numb = train_numb*valid_rate 
 
     method = {
+        "Xception":Xception,
+        "DeeplabEncoder":DeeplabEncoder,
         "ResNet34":ResNet34,
         "ResNet50":ResNet50,
         "GooLeNet": GooLeNet,
@@ -107,15 +109,18 @@ def train(key,EPOCHS = 10,BatchSize = 4,train_numb_per_epoch = 10*8,valid_rate =
 
     print ("the number of train data is",train_numb,train_numb//BS)  
     print ("the number of val data is",valid_numb,valid_numb//BS)
+    train10m_name=['201612_10M.tif','201704_10M.tif','2019A3_10M.tif','2019B3_10M.tif','201905_10M.tif']
+    train20m_name=['201612_20M.tif','201704_20M.tif','2019A3_20M.tif','2019B3_20M.tif','201905_20M.tif']
+    label10m_name=['test_10m_roi.png','test_10m_roi.png','test_10m_roi.png','test_10m_roi.png','test_10m_roi.png']
+    label20m_name=['test_20m_roi.png','test_20m_roi.png','test_20m_roi.png','test_20m_roi.png','test_20m_roi.png']
 
 
 
-
-    H = m.fit_generator(generator=generateDataTF(BS,img_w,img_h,2,['2016.tif','2017.tif','2019.tif'],['2016.png','2017.png','2019.png']),
+    H = m.fit_generator(generator=generateDataTF(BS,img_w,img_h,2,train10m_name,label10m_name),
                         steps_per_epoch=train_numb_per_epoch,
                         epochs=EPOCHS,
                         verbose=0,
-                        validation_data=generateDataTF(BS,img_w,img_h,2,['2016.tif','2017.tif','2019.tif'],['2016.png','2017.png','2019.png']),
+                        validation_data=generateDataTF(BS,img_w,img_h,2,train10m_name,label10m_name),
                         validation_steps=train_numb_per_epoch*valid_rate,
                         callbacks=callableTF,
                         max_q_size=1)  

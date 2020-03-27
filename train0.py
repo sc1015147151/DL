@@ -12,11 +12,9 @@ from keras.layers import Input
 from keras.utils.np_utils import to_categorical  
 from keras.preprocessing.image import img_to_array  
 from keras.callbacks import ModelCheckpoint ,TensorBoard
-from SegNet0 import *
-from SegNet2 import *
-from SegNet1 import *
-from SegNet import *
-from FCN32 import *
+
+from Models.SegNet import *
+from Models.FCN32 import *
 from Models.utils import *
 from sklearn.preprocessing import LabelEncoder  
 from PIL import Image  
@@ -40,8 +38,8 @@ def get_train_val(val_rate = 0.25):
     train_url = []    
     train_set = []
     val_set  = []
-    for pic in os.listdir(filepath + 'img'):
-        train_url.append(pic)
+    #for pic in os.listdir(filepath + 'img'):
+    #    train_url.append(pic)
     random.shuffle(train_url)
     total_num = len(train_url)
     val_num = int(val_rate * total_num)

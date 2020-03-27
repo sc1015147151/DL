@@ -19,6 +19,12 @@ import random
 import os
 from tqdm import tqdm  
 from keras import backend as K 
+try:
+    from Models.utils import *
+except:
+    from utils import *
+
+
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 seed = 7  
 np.random.seed(seed)  

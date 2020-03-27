@@ -90,34 +90,29 @@ def genDataTwo(batch_size,img_w,img_h,n_label,image_names=[],label_names=[],imag
             tif_roi_20=dataset_20m.ReadAsArray(random_width,random_height,int(img_size_20m),int(img_size_20m))
        
             if (np.sum(tif_roi_10[0]==0)/(256*256))<0.25:
-                #print(np.sum(tif_roi_10[0]==0)/(256*256))
+
                 data_roi_10=cv2.merge((bandScale(tif_roi_10[0]),
-				                       bandScale(tif_roi_10[1]),
+                                       bandScale(tif_roi_10[1]),
                                        bandScale(tif_roi_10[2]),
-				                       bandScale(tif_roi_10[3])))
-                #data_roi_20=cv2.merge(tif_roi_20)
+                                       bandScale(tif_roi_10[3])))
+
                 data_roi_20=cv2.merge((bandScale(tif_roi_20[0]),
                                        bandScale(tif_roi_20[1]),
                                        bandScale(tif_roi_20[2])))
                 label_roi_10 = to_categorical((label_data_10m[(random_height*2):(random_height*2 + img_size_20m*2),(random_width*2):(random_width*2+img_size_20m*2)]).flatten(), num_classes=n_label)
-                #print("数据集制作中的标签",set((label_data_10m[(random_height*2):(random_height*2 + img_size_20m*2),(random_width*2):(random_width*2+img_size_20m*2)]).flatten()))
+
+
                 label_roi_20 = to_categorical((label_data_20m[random_height: random_height +img_size_20m, random_width: random_width + img_size_20m]).flatten(), num_classes=n_label)
                 train_data_10m.append( data_roi_10)  
                 train_data_20m.append( data_roi_20) 
                 train_label_10m.append(label_roi_10)
                 train_label_20m.append(label_roi_20)
                 i=i+1
-                #yield(random_width,img_w,random_height,img_h)
-                #yield(np.array(data_roi).shape,np.array(label_roi).shape)    
-        #yield(np.array(train_data).shape,np.array(train_label).shape) 
-  
+
         yield({"Input10" :train_data_10m,
                "Input20" :train_data_20m},np.array(train_label_10m))
         batch_num=batch_num+1
-#image_names_set=['test.tif']
-#label_names_set=['test_label.png']
-#for i in(generateDataTF(8,256,256,2,image_names_set,label_names_set)):
-#    print(i)
+
 
 def train(key,EPOCHS = 10,BatchSize = 4,train_numb_per_epoch = 10*8,valid_rate = 0.2): 
     key=args['key']
@@ -171,9 +166,9 @@ def train(key,EPOCHS = 10,BatchSize = 4,train_numb_per_epoch = 10*8,valid_rate =
 def args_parse():
 # construct the argument parse and parse the arguments
     ap = argparse.ArgumentParser()
-    ap.add_argument("-k", "--key", required=False,help="key of train model ")
-    ap.add_argument("-e", "--epochs", required=False,help="train epochs")
-    ap.add_argument("-b", "--batchsize", required=False,help="train batchsize")
+    ap.add_argument("-k", "--key", required=False,default=  'SegNet2In_2' ,help="key of train model ")
+    ap.add_argument("-e", "--epochs", required=False,default=100,help="train epochs")
+    ap.add_argument("-b", "--batchsize", required=False,default=8,help="train batchsize")
     ap.add_argument("-s", "--size", required=False,default=256,help="sub image size")
     args = vars(ap.parse_args())    
     return args
