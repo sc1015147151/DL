@@ -33,6 +33,6 @@ CUDA 9.0 with cudnn7.0
 Just click ***train.bat***
 
 # Multiple Bands Data 
-https://pan.baidu.com/s/1Ulwrpxg4F654Y_vATXcR7g    
+https://pan.baidu.com/s/1HKJLm3N8wQHI8B2218ySzQ   
 
-la6h
+j2eq
